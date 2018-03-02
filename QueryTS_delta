@@ -1,0 +1,23 @@
+import numpy as np
+import pandas as pd
+query = pd.read_csv('0301_short.csv', encoding = 'utf-8', names=['FileID', 'CustomerID', 'QueryTS', 'ProductID'])
+query['times'] = 1
+
+# Create mean/std of differences in QueryTS 
+# For groupby, see https://pandas.pydata.org/pandas-docs/stable/groupby.html
+#
+# make sure that x is the query_log file with column names in pd format
+def timedelta_statistics_creator(x): 
+    df = query[['FileID','QueryTS']]
+    df = df.sort(['FileID','QueryTS'])
+    df = df.reset_index(drop=True)
+    df['Timedelta'] = np.nan
+    for i in range(len(df)):
+        if i != len(df)-1:
+            if df['FileID'].loc[i] == df['FileID'].loc[i+1]:                
+                 df['Timedelta'].loc[i] = df['QueryTS'].loc[i+1] - df['QueryTS'].loc[i]
+            else: df['Timedelta'].loc[i] = np.nan
+        else: df['Timedelta'].loc[i] = np.nan
+    timedelta_statistics = df.groupby(['FileID'])[['Timedelta']].agg([np.mean, np.std])
+    return timedelta_statistics
+timedelta_statistics = timedelta_statistics_creator(query)
